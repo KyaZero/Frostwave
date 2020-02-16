@@ -52,12 +52,15 @@ void frostwave::Engine::Init(std::function<void(f32)> gameUpdate, std::function<
 
 	m_GameUpdate = gameUpdate;
 	m_EditorUpdate = editorUpdate;
-	Window::Get()->Run([&]() { Tick(); });
+	Window::Get()->Run([&]() 
+	{
+		Tick(); 
+	});
 }
 
 void frostwave::Engine::Tick()
 {
-	if (Window::Get()->GetInput()->IsKeyPressed(fw::Key::ESCAPE)) 
+	if (Window::Get()->GetInput()->IsKeyPressed(fw::Key::ESCAPE))
 		Shutdown();
 
 	m_Timer.Update();

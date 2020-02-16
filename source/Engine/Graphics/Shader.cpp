@@ -37,8 +37,7 @@ bool CompileShader(const std::string& source, const std::string& entry, const st
 
 	ID3DBlob* shaderBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
-	HRESULT hr = D3DCompile(contents.c_str(), contents.size(), source.c_str(), macros, D3D_COMPILE_STANDARD_FILE_INCLUDE,
-		entry.c_str(), profile.c_str(), flags, 0, &shaderBlob, &errorBlob);
+	HRESULT hr = D3DCompile(contents.c_str(), contents.size(), source.c_str(), macros, D3D_COMPILE_STANDARD_FILE_INCLUDE, entry.c_str(), profile.c_str(), flags, 0, &shaderBlob, &errorBlob);
 
 	if (FAILED(hr))
 	{
@@ -49,7 +48,7 @@ bool CompileShader(const std::string& source, const std::string& entry, const st
 
 		if (errorBlob)
 		{
-			ERROR_LOG("Shader failed to compile: %s", (char*)errorBlob->GetBufferPointer());
+			ERROR_LOG("Shader '%s' failed to compile: %s", source.c_str(), (char*)errorBlob->GetBufferPointer());
 			errorBlob->Release();
 		}
 

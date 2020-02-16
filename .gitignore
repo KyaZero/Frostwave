@@ -13,6 +13,8 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+[Ii]nt/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -338,3 +340,4 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+/AYAYA/lib
