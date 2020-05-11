@@ -11,12 +11,11 @@ int WinMain()
 		fw::Engine engine(50MB);
 		fw::Editor editor;
 		Game game;
-		auto editorTick = [&](f32 dt, const fw::Texture* renderedScene) { editor.Update(&engine, dt, renderedScene); };
-		auto gameTick = [&](f32 dt) { game.Update(&engine, dt); };
-		auto gameInit = [&] {game.Init(&engine); };
+		auto editorTick = [&] (f32 dt, const fw::Texture* renderedScene) { editor.Update(&engine, dt, renderedScene); };
+		auto gameTick = [&] (f32 dt) { game.Update(&engine, dt); };
+		auto gameInit = [&] { game.Init(&engine); };
 		engine.Init(gameTick, gameInit, editorTick);
 	}
-
 
 	fw::Framework::ReportLiveObjects();
 	//system("pause");

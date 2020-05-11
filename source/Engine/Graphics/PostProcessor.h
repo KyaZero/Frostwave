@@ -13,8 +13,8 @@ namespace frostwave
 	struct PostProcessStage
 	{
 		PostProcessStage() { }
-		PostProcessStage(const std::string& ps, const std::vector<Texture*>& srv, Texture* rt, const std::string& n, bool rbb = false) :
-			pixelShader(Allocate<Shader>(Shader::Type::Pixel, ps)), shaderResources(srv), renderTarget(rt), name(n), renderToBackbuffer(rbb) { }
+		PostProcessStage(const std::string& pixelShader, const std::vector<Texture*>& shaderResourceView, Texture* renderTarget, const std::string& name, bool renderToBackbuffer = false) :
+			pixelShader(Allocate<Shader>(Shader::Type::Pixel, pixelShader)), shaderResources(shaderResourceView), renderTarget(renderTarget), name(name), renderToBackbuffer(renderToBackbuffer) { }
 
 		Shader* pixelShader;
 		std::vector<Texture*> shaderResources;
@@ -45,6 +45,8 @@ namespace frostwave
 		void Push(PostProcessStage stage);
 		void Push(Technique tech);
 
+		void Clear();
+
 	private:
 		void RenderStage(PostProcessStage stage, Texture* backBuffer);
 
@@ -60,6 +62,7 @@ namespace frostwave
 			Vec4f lightColor;
 			Vec4f kernel[16];
 			Vec2f resolution;
+			Vec2f texelSize;
 			Vec2f size;
 			f32 farPlane;
 			f32 nearPlane;

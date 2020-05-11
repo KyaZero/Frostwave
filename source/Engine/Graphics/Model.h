@@ -28,9 +28,10 @@ namespace frostwave
 		const std::vector<Mesh*>& GetMeshes() const;
 
 		const Mat4f& GetTransform();
-		const Material& GetMaterial() const { return m_Material; }
+		Material& GetMaterial() { return m_Material; }
 
-		static Model* GetSphere(f32 radius, i32 sliceCount, i32 stackCount, const Vec4f& color = Vec4f(1,1,1,1));
+		static Model* GetSphere(f32 radius, i32 sliceCount, i32 stackCount, const Vec4f& color = Vec4f(1, 1, 1, 1));
+		static Model* GetCube();
 
 	private:
 		Texture* LoadMaterialTexture(aiMaterial* material, aiTextureType type);

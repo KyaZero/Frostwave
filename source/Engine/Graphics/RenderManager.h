@@ -4,6 +4,7 @@
 #include <Engine/Graphics/GBuffer.h>
 #include <Engine/Graphics/RenderStateManager.h>
 #include <Engine/Graphics/Sampler.h>
+#include <Engine\Graphics\SkyboxRenderer.h>
 
 namespace frostwave
 {
@@ -21,6 +22,7 @@ namespace frostwave
 		~RenderManager();
 
 		void Init();
+		void InitCubemap();
 		void Render(f32 totalTime, Camera* camera, Texture* backBuffer);
 
 		void ResizeTextures(i32 width, i32 height);
@@ -28,7 +30,6 @@ namespace frostwave
 		void Submit(Model* model);
 		void Submit(PointLight* light);
 		void Submit(DirectionalLight* light);
-		void Submit(EnvironmentLight* light);
 
 	private:
 		void ClearTextures();
@@ -49,10 +50,19 @@ namespace frostwave
 		ForwardRenderer* m_ForwardRenderer;
 		DeferredRenderer* m_DeferredRenderer;
 		ShadowRenderer* m_ShadowRenderer;
+		SkyboxRenderer* m_SkyboxRenderer;
 		PostProcessor* m_PostProcessor;
 		RenderStateManager m_StateManager;
 		DirectionalLight* m_DirectionalLight;
-		Sampler* m_LinearWrapSampler,* m_PointWrapSampler,* m_PointClampSampler,* m_LinearClampSampler;
+		Sampler* m_LinearWrapSampler;
+		Sampler* m_PointWrapSampler;
+		Sampler* m_PointClampSampler;
+		Sampler* m_LinearClampSampler;
+		Texture* m_HDRITexture;
+		Texture* m_EnvironmentMap;
+		std::vector<Texture*> m_WhitepointTextures;
+		Texture* m_PingWhitepointTexture;
+		Texture* m_PongWhitepointTexture;
 	};
 }
 namespace fw = frostwave;

@@ -42,8 +42,8 @@ namespace frostwave
 		std::unordered_map<std::string, size_t> m_Indices;
 		std::vector<TimeStampInfo> m_TimeStamps;
 
-		i32 m_frameCountAvg;
-		f32 m_tBeginAvg;
+		i32 m_FrameCountAvg;
+		f32 m_TBeginAvg;
 
 		Timer m_Timer;
 	};

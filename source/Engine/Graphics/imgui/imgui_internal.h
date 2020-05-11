@@ -23,6 +23,8 @@ Index of this file:
 
 #pragma once
 
+#pragma warning( push )
+#pragma warning( disable : 5054)
 //-----------------------------------------------------------------------------
 // Header mess
 //-----------------------------------------------------------------------------
@@ -904,7 +906,6 @@ struct ImGuiPtrOrIndex
     ImGuiPtrOrIndex(void* ptr)          { Ptr = ptr; Index = -1; }
     ImGuiPtrOrIndex(int index)          { Ptr = NULL; Index = index; }
 };
-
 // Extend ImGuiDockNodeFlags_
 enum ImGuiDockNodeFlagsPrivate_
 {
@@ -1996,3 +1997,5 @@ extern void                 ImGuiTestEngineHook_Log(ImGuiContext* ctx, const cha
 #ifdef _MSC_VER
 #pragma warning (pop)
 #endif
+
+#pragma warning( pop ) 

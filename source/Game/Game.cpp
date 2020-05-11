@@ -21,36 +21,58 @@ Game::~Game()
 void Game::Init(fw::Engine* engine)
 {
 	engine;
-	fw::Model* sponza = fw::Allocate<fw::Model>("assets/meshes/sponza/sponzaPBR.obj");
-	sponza->SetScale({ 0.01f, 0.01f, 0.01f });
+	fw::Model* sponza = fw::Allocate<fw::Model>("assets/meshes/sponza2/Sponza.fbx");
+	sponza->SetPosition(fw::Vec3f(0, -5, 0));
+	sponza->SetScale({ 0.02f, 0.02f, 0.02f });
 	engine->GetScene()->AddModel(sponza);
 
-	fw::Model* lux = fw::Allocate<fw::Model>("assets/meshes/lux/Lux_Mesh.obj");
-	lux->SetScale({ 0.1f, 0.1f, 0.1f });
-	engine->GetScene()->AddModel(lux);
-
-	fw::Model* cerberus = fw::Allocate<fw::Model>("assets/meshes/Cerberus/Cerberus.fbx");
-	cerberus->SetPosition({ 0, 1, 0 });
-	cerberus->SetScale(0.01f);
-	cerberus->SetRotation(fw::Quatf({ 1,0,0 }, -fw::PI / 2.0f));
-	engine->GetScene()->AddModel(cerberus);
-
-	engine->GetScene()->SetEnvironmentLight(fw::Allocate<fw::EnvironmentLight>(fw::Allocate<fw::Texture>("assets/cubemaps/panorama_cubemap.dds")));
-
-	for (size_t i = 0; i < 16; i++)
-	{
-		//engine->GetScene()->AddLight(fw::Allocate<fw::PointLight>(fw::Vec3f(fw::Rand11() * 10.0f, fw::Rand() * 10.0f, fw::Rand11() * 10.0f),
-		//	fw::Rand() * 5.0f, fw::Vec3f(fw::Rand(), fw::Rand(), fw::Rand()), fw::Rand() * 100.0f));
-	}
 	m_Light = fw::Allocate<fw::DirectionalLight>();
-	engine->GetScene()->SetDirectionalLight(m_Light);
+	engine->GetScene()->AddLight(m_Light);
+	//engine->GetScene()->AddLight(fw::Allocate<fw::DirectionalLight>(fw::Vec3f(2,2,0), fw::Vec3f(1,0,0.2f)));
 
 	m_Camera = fw::Allocate<FreeCamera>(fw::Vec3f(0, 0, 0));
+
+	/*for (size_t y = 0; y < 7; y++)
+	{
+		for (size_t x = 0; x < 7; x++)
+		{
+			auto* sphere = fw::Model::GetSphere(0.33f, 32, 32);
+			sphere->SetPosition({ 0, y-3.5f, x - 3.5f });
+			auto& sphereMat = sphere->GetMaterial();
+			sphereMat.albedo = { 1, 1, 1, 1 };
+			sphereMat.roughness = x / 7.0f;
+			sphereMat.metallic = y / 7.0f;
+			engine->GetScene()->AddModel(sphere);
+		}
+	}
+
+	for (i32 i = 0; i < 10; i++)
+	{
+		auto* sphere = fw::Model::GetSphere(0.1f, 16, 16);
+		sphere->GetMaterial().roughness = 1;
+		sphere->GetMaterial().albedo = fw::Vec3f(fw::Rand(), fw::Rand(), fw::Rand());
+		sphere->GetMaterial().emissive = 2.0f;
+		sphere->SetPosition(fw::Vec3f(fw::RandomRange(-10.0f, 10.0f), fw::RandomRange(-5.0f, 5.0f), fw::RandomRange(-10.0f, 10.0f)));
+		engine->GetScene()->AddModel(sphere);
+	}
+
+	for (i32 y = -1; y < 1; y++)
+	{
+		for (i32 x = -1; x < 1; x++)
+		{
+			engine->GetScene()->AddLight(fw::Allocate<fw::PointLight>(fw::Vec3f(2,y*5.0f+2, x * 5.0f + 2), 50.0f, fw::Vec3f(1,0,1), 10.0f));
+			auto* sphere = fw::Model::GetSphere(0.1f, 16, 16);
+			sphere->GetMaterial().roughness = 1;
+			sphere->GetMaterial().albedo = fw::Vec3f(1, 0, 1);
+			sphere->GetMaterial().emissive = 2.0f;
+			sphere->SetPosition(fw::Vec3f(2, y * 5.0f + 2, x * 5.0f + 2));
+			engine->GetScene()->AddModel(sphere);
+		}
+	}*/
 }
 
 void Game::Update(fw::Engine* engine, f32 dt)
 {
-	dt; engine;
 	m_Camera->Update(dt);
 	engine->GetScene()->SetCamera(m_Camera->GetRaw());
 
@@ -70,5 +92,4 @@ void Game::Update(fw::Engine* engine, f32 dt)
 		m_Light->SetColor(color);
 		ImGui::End();
 	}
-
 }

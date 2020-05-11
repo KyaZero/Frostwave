@@ -9,8 +9,8 @@
 frostwave::GPUProfiler::GPUProfiler()
 	: m_FrameQuery(0),
 	m_FrameCollect(-1),
-	m_frameCountAvg(0),
-	m_tBeginAvg(0.0f)
+	m_FrameCountAvg(0),
+	m_TBeginAvg(0.0f)
 {
 }
 
@@ -91,7 +91,6 @@ void frostwave::GPUProfiler::WaitForDataAndUpdate()
 	// Wait for data
 	while (Framework::GetContext()->GetData(m_QueryDisjoint[m_FrameCollect], NULL, 0, 0) == S_FALSE)
 	{
-		//Sleep(1);
 	}
 
 	int iFrame = m_FrameCollect;
@@ -100,14 +99,12 @@ void frostwave::GPUProfiler::WaitForDataAndUpdate()
 	D3D11_QUERY_DATA_TIMESTAMP_DISJOINT timestampDisjoint;
 	if (Framework::GetContext()->GetData(m_QueryDisjoint[iFrame], &timestampDisjoint, sizeof(timestampDisjoint), 0) != S_OK)
 	{
-		INFO_LOG("Couldn't retrieve timestamp disjoint query data");
 		return;
 	}
 
 	if (timestampDisjoint.Disjoint)
 	{
 		// Throw out this frame's data
-		INFO_LOG("Timestamps disjoint");
 		return;
 	}
 
@@ -125,24 +122,24 @@ void frostwave::GPUProfiler::WaitForDataAndUpdate()
 		if (timestampPrev == 0) 
 			timestampPrev = timestamp;
 
-		f32 diff = float(timestamp - timestampPrev);
-		ts.dt = diff / float(timestampDisjoint.Frequency);
+		f32 diff = f32(timestamp - timestampPrev);
+		ts.dt = diff / f32(timestampDisjoint.Frequency);
 		timestampPrev = timestamp;
 
 		ts.totalAverage += ts.dt;
 	}
 
-	++m_frameCountAvg;
-	if (m_Timer.GetTotalTime() > m_tBeginAvg + 0.5f)
+	++m_FrameCountAvg;
+	if (m_Timer.GetTotalTime() > m_TBeginAvg + 0.5f)
 	{
 		for (auto& ts : m_TimeStamps)
 		{
-			ts.average = ts.totalAverage / m_frameCountAvg;
+			ts.average = ts.totalAverage / m_FrameCountAvg;
 			ts.totalAverage = 0.0f;
 		}
 
-		m_frameCountAvg = 0;
-		m_tBeginAvg = m_Timer.GetTotalTime();
+		m_FrameCountAvg = 0;
+		m_TBeginAvg = m_Timer.GetTotalTime();
 	}
 
 	m_Timer.Update();
@@ -150,18 +147,13 @@ void frostwave::GPUProfiler::WaitForDataAndUpdate()
 
 void frostwave::GPUProfiler::DrawDebug()
 {
-	ImGui::Begin("Profiling", 0, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Begin("GPU Profiling", 0, ImGuiWindowFlags_AlwaysAutoResize);
 	float dTDrawTotal = 0.0f;
 	for (auto& ts : m_TimeStamps)
 	{
 		if (ts.id == "Begin") continue;
 		dTDrawTotal += ts.average;
 		ImGui::Text("%s: %0.2f ms", ts.id.c_str(), 1000.0f * ts.average);
-		//ImGui::Text("Shadows: %0.2f ms", 1000.0f * m_Profiler.DtAvg(GTS_Shadows));
-		//ImGui::Text("Deferred: %0.2f ms", 1000.0f * m_Profiler.Dt(GTS_Deferred));
-		//ImGui::Text("Deferred Lighting: %0.2f ms", 1000.0f * m_Profiler.DtAvg(GTS_DeferredLighting));
-		//ImGui::Text("Forward: %0.2f ms", 1000.0f * m_Profiler.DtAvg(GTS_Forward));
-		//ImGui::Text("PostProcessing: %0.2f ms", 1000.0f * m_Profiler.DtAvg(GTS_PostProcessing));
 	}
 	ImGui::Text("GPU frame time: %0.2f ms", 1000.0f * (dTDrawTotal));
 	ImGui::End();

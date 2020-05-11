@@ -328,7 +328,7 @@ ID3D11DeviceContext* frostwave::Framework::GetContext()
 void frostwave::Framework::ReportLiveObjects()
 {
 	// dump output only if we actually grabbed a debug interface
-	if (s_Debug != nullptr)
+	if (s_Debug)
 	{
 		s_Debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 		SafeRelease(&s_Debug);

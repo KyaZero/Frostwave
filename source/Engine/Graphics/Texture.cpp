@@ -18,7 +18,9 @@ struct frostwave::Texture::Data
 	ID3D11RenderTargetView* renderTarget = nullptr;
 	Vec2i size = Vec2i();
 	D3D11_VIEWPORT viewport = {};
+	DXGI_FORMAT format;
 	bool isDepth = false;
+	bool isRenderTarget = true;
 };
 
 frostwave::Texture::Texture() : m_Data(nullptr)
@@ -31,9 +33,14 @@ frostwave::Texture::Texture(const std::string& path) : m_Data(nullptr)
 	Load(path);
 }
 
-frostwave::Texture::Texture(Vec2i size, ImageFormat format, void* data, bool renderTarget) : m_Data(nullptr)
+frostwave::Texture::Texture(Vec2i size, ImageFormat format, void* data) : m_Data(nullptr)
 {
-	Create(size, format, data, renderTarget);
+	Create(size, format, data);
+}
+
+frostwave::Texture::Texture(const TextureCreateInfo& info) : m_Data(nullptr)
+{
+	Create(info);
 }
 
 frostwave::Texture::Texture(const Texture& other) : m_Data(nullptr)
@@ -89,7 +96,20 @@ void frostwave::Texture::SetAsActiveTarget(frostwave::Texture* depthStencil)
 	SetViewport();
 }
 
-void frostwave::Texture::SetViewport()
+void frostwave::Texture::SetCustomViewport(f32 topLeftX, f32 topLeftY, f32 width, f32 height, f32 minDepth, f32 maxDepth)
+{
+	D3D11_VIEWPORT viewport;
+	viewport.TopLeftX = topLeftX;
+	viewport.TopLeftY = topLeftY;
+	viewport.Width = width;
+	viewport.Height = height;
+	viewport.MinDepth = minDepth;
+	viewport.MaxDepth = maxDepth;
+
+	Framework::GetContext()->RSSetViewports(1, &viewport);
+}
+										    
+void frostwave::Texture::SetViewport()	    
 {
 	Framework::GetContext()->RSSetViewports(1, &m_Data->viewport);
 }
@@ -146,45 +166,60 @@ bool frostwave::Texture::Load(const std::string& path)
 	return true;
 }
 
-void frostwave::Texture::Create(Vec2i size, ImageFormat format, void* data, bool renderTarget)
+void frostwave::Texture::Create(Vec2i size, ImageFormat format, void* data)
+{
+	TextureCreateInfo info;
+	info.size = size;
+	info.format = format;
+	info.data = data;
+	Create(info);
+}
+
+void frostwave::Texture::Create(const TextureCreateInfo& info)
 {
 	if (!m_Data)
 		m_Data = Allocate();
 
+	m_Data->isRenderTarget = info.renderTarget;
+	m_Data->format = (DXGI_FORMAT)info.format;
+
 	D3D11_TEXTURE2D_DESC desc = { };
-	desc.Width = (u32)size.x;
-	desc.Height = (u32)size.y;
-	desc.MipLevels = 1;
-	desc.ArraySize = 1;
-	desc.Format = (DXGI_FORMAT)format;
+	desc.Width = (u32)info.size.x;
+	desc.Height = (u32)info.size.y;
+	desc.MipLevels = info.numMips;
+	desc.ArraySize = info.cubemap ? 6 : 1;
+	desc.Format = m_Data->format;
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
 	desc.Usage = D3D11_USAGE_DEFAULT;
 
-	if (renderTarget)
+	if (m_Data->isRenderTarget)
 		desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	else
 		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
 	desc.CPUAccessFlags = 0;
-	desc.MiscFlags = 0;
+	desc.MiscFlags = info.cubemap ? D3D11_RESOURCE_MISC_TEXTURECUBE : 0;
+	if (info.numMips != 1)
+		desc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
 	ID3D11Texture2D* texture = nullptr;
 
 	D3D11_SUBRESOURCE_DATA initialData = {};
-	initialData.pSysMem = data;
-	initialData.SysMemPitch = size.x * 4;
+	initialData.pSysMem = info.data;
+	initialData.SysMemPitch = info.size.x * (info.hdr ? sizeof(f32) : sizeof(u8)) * 4;
 
-	ErrorCheck(Framework::GetDevice()->CreateTexture2D(&desc, data ? &initialData : nullptr, &texture));
+	ErrorCheck(Framework::GetDevice()->CreateTexture2D(&desc, info.data ? &initialData : nullptr, &texture));
 
-	CreateFromTexture(texture, renderTarget);
-	m_Data->size = size;
+	CreateFromTexture(texture);
+	m_Data->size = info.size;
 }
 
-void frostwave::Texture::CreateFromTexture(ID3D11Texture2D* texture, bool renderTarget)
+void frostwave::Texture::CreateFromTexture(ID3D11Texture2D* texture)
 {
-	if (renderTarget)
+	if (m_Data->isRenderTarget)
 		ErrorCheck(Framework::GetDevice()->CreateRenderTargetView(texture, nullptr, &m_Data->renderTarget));
+
 	if (texture)
 	{
 		D3D11_TEXTURE2D_DESC desc;
@@ -265,6 +300,29 @@ void frostwave::Texture::Release()
 		if (m_Data->texture)
 			SafeRelease(&m_Data->texture);
 	}
+}
+
+ID3D11RenderTargetView* frostwave::Texture::CreateRenderTargetViewForMip(i32 mipLevel, bool cubemap)
+{
+	ID3D11RenderTargetView* rtv;
+
+	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = { };
+	rtvDesc.Format = m_Data->format;
+	rtvDesc.ViewDimension = cubemap ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY : D3D11_RTV_DIMENSION_TEXTURE2D;
+	if (cubemap)
+	{
+		rtvDesc.Texture2DArray.MipSlice = mipLevel;
+		rtvDesc.Texture2DArray.ArraySize = 6;
+		rtvDesc.Texture2DArray.FirstArraySlice = 0;
+	}
+	else
+	{
+		rtvDesc.Texture2D.MipSlice = mipLevel;
+	}
+
+	ErrorCheck(Framework::GetDevice()->CreateRenderTargetView(m_Data->texture, &rtvDesc, &rtv));
+
+	return rtv;
 }
 
 ID3D11Texture2D* frostwave::Texture::GetTexture() const

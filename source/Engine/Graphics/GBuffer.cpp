@@ -24,9 +24,10 @@ void frostwave::GBuffer::Create(Vec2i size)
 {
 	std::array<ImageFormat, (i32)GBuffer::Textures::Count> textureFormats =
 	{
-		(ImageFormat)DXGI_FORMAT_R8G8B8A8_UNORM,
-		(ImageFormat)DXGI_FORMAT_R16G16B16A16_SNORM,
-		(ImageFormat)DXGI_FORMAT_R8G8B8A8_UNORM,
+		(ImageFormat)DXGI_FORMAT_R8G8B8A8_UNORM, //Albedo
+		(ImageFormat)DXGI_FORMAT_R16G16B16A16_SNORM, //Normals
+		(ImageFormat)DXGI_FORMAT_R8G8B8A8_UNORM, //Roughness, Metallic, Ambient Occlusion
+		(ImageFormat)DXGI_FORMAT_R32_FLOAT //Emissive
 	};
 
 	i32 i = 0;

@@ -1,35 +1,26 @@
 #include "Scene.h"
 #include <Engine/Memory/Allocator.h>
 
-frostwave::Scene::Scene() : m_DirectionalLight(nullptr), m_EnvironmentLight(nullptr)
+frostwave::Scene::Scene()
 {
 }
 
 frostwave::Scene::~Scene()
 {
-	if (m_DirectionalLight)
-		Free(m_DirectionalLight);
+	for (auto* model : m_Models)
+		Free(model);
 
-	if (m_EnvironmentLight)
-		Free(m_EnvironmentLight);
+	for (auto* light : m_PointLights)
+		Free(light);
 
-	for (auto* m : m_Models)
-	{
-		Free(m);
-	}
-
-	for (auto* l : m_PointLights)
-	{
-		Free(l);
-	}
+	for (auto* light : m_DirectionalLights)
+		Free(light);
 
 	m_Models.clear();
 }
 
 void frostwave::Scene::Init()
 {
-	m_DirectionalLight = nullptr;
-	m_EnvironmentLight = nullptr;
 	m_Camera = nullptr;
 }
 
@@ -43,6 +34,11 @@ void frostwave::Scene::AddLight(PointLight* light)
 	m_PointLights.push_back(light);
 }
 
+void frostwave::Scene::AddLight(DirectionalLight* light)
+{
+	m_DirectionalLights.push_back(light);
+}
+
 void frostwave::Scene::SetCamera(Camera* camera)
 {
 	m_Camera = camera;
@@ -54,6 +50,6 @@ void frostwave::Scene::Submit(RenderManager* renderer)
 		renderer->Submit(model);
 	for (auto* light : m_PointLights)
 		renderer->Submit(light);
-	renderer->Submit(m_EnvironmentLight);
-	renderer->Submit(m_DirectionalLight);
+	for (auto* light : m_DirectionalLights)
+		renderer->Submit(light);
 }

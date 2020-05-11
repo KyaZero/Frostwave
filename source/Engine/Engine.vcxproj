@@ -48,6 +48,7 @@
     <ClCompile Include="Graphics\Framework.cpp" />
     <ClCompile Include="Graphics\ForwardRenderer.cpp" />
     <ClCompile Include="Platform\Window.cpp" />
+    <ClCompile Include="Graphics\SkyboxRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Common.h" />
@@ -71,6 +72,7 @@
     <ClInclude Include="Graphics\DeferredRenderer.h" />
     <ClInclude Include="Graphics\GBuffer.h" />
     <ClInclude Include="Graphics\GpuProfiler.h" />
+    <ClInclude Include="Graphics\ImageFormat.h" />
     <ClInclude Include="Graphics\Lights.h" />
     <ClInclude Include="Graphics\Material.h" />
     <ClInclude Include="Graphics\Model.h" />
@@ -107,6 +109,7 @@
     <ClInclude Include="Graphics\ForwardRenderer.h" />
     <ClInclude Include="Graphics\Mesh.h" />
     <ClInclude Include="Platform\Window.h" />
+    <ClInclude Include="Graphics\SkyboxRenderer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

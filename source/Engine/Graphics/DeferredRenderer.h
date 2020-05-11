@@ -20,23 +20,33 @@ namespace frostwave
 		~DeferredRenderer();
 
 		void Init();
+
+		Texture* GenerateCubemap(Texture* hdriTexture);
+		void PrefilterPBRTextures(Texture* environmentMap);
+
 		void RenderGeometry(f32 totalTime, Camera* camera);
 		void RenderLighting(f32 totalTime, RenderStateManager* stateManager);
+
 		void Submit(Model* model);
 		void Submit(PointLight* light);
 		void Submit(DirectionalLight* light);
-		void Submit(EnvironmentLight* light);
 
 	private:
+		void ConvoluteCubemap(Texture* environmentMap);
+		void PrefilterSpecularCubemap(Texture* environmentMap);
+		void GenerateBRDFTexture();
+
 		std::vector<Model*> m_Models;
 		std::vector<PointLight*> m_PointLights;
+		std::vector<DirectionalLight*> m_DirectionalLights;
 
 		Buffer m_GeometryFrameBuffer, m_ObjectBuffer, m_LightingBuffer;
-		Shader m_RenderGeometryShader, m_PointLightShader, m_EnvLightShader;
-		EnvironmentLight* m_EnvironmentLight;
-		DirectionalLight* m_DirectionalLight;
+		Shader m_RenderGeometryShader, m_PointLightShader, m_AmbientLightShader, m_DirectionalLightShader;
 		Model* m_LightSphere;
 		Texture m_NullTexture;
+		Texture* m_IrradianceTexture;
+		Texture* m_PrefilteredTexture;
+		Texture* m_BRDFTexture;
 
 		struct GeometryFrameBuffer
 		{

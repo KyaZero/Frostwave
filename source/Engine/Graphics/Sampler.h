@@ -9,7 +9,8 @@ namespace frostwave
 		enum class Filter
 		{
 			Linear,
-			Point
+			Point,
+			Anisotropic
 		};
 
 		enum class Address

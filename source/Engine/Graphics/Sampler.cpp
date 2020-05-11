@@ -37,6 +37,9 @@ void frostwave::Sampler::Init(Filter filter, Address address, Vec4f border)
 	case frostwave::Sampler::Filter::Point:
 		desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 		break;
+	case frostwave::Sampler::Filter::Anisotropic:
+		desc.Filter = D3D11_FILTER_ANISOTROPIC;
+		break;
 	}
 
 	switch (address)
@@ -64,7 +67,7 @@ void frostwave::Sampler::Init(Filter filter, Address address, Vec4f border)
 	}
 
 	desc.MipLODBias = 0.0f;
-	desc.MaxAnisotropy = 2;
+	desc.MaxAnisotropy = 16;
 	desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
 	desc.BorderColor[0] = border.x;
 	desc.BorderColor[1] = border.y;

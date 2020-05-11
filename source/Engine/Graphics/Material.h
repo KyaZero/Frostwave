@@ -10,7 +10,7 @@ namespace frostwave
 		f32 metallic = -1.0f;
 		f32 roughness = -1.0f;
 		f32 ao = -1.0f;
-		f32 _pad;
+		f32 emissive = 0;
 	};
 }
 namespace fw = frostwave;

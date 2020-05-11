@@ -14,16 +14,16 @@ void frostwave::ShadowRenderer::Init()
 {
 	m_FrameBuffer.Init(sizeof(FrameBuffer), BufferUsage::Dynamic, BufferType::Constant, 0, &m_FrameBufferData);
 	m_ObjectBuffer.Init(sizeof(ObjectBuffer), BufferUsage::Dynamic, BufferType::Constant, 0, &m_ObjectBufferData);
-	m_ShadowShader.Load(Shader::Type::Vertex | Shader::Type::Pixel, "assets/shaders/shadow_ps.fx", "assets/shaders/shadow_vs.fx");
+	m_ShadowShader.Load(Shader::Type::Vertex | Shader::Type::Pixel, "../source/Engine/Shaders/shadow_ps.fx", "../source/Engine/Shaders/shadow_vs.fx");
 }
 
 void frostwave::ShadowRenderer::Render(Camera* camera)
 {
-	auto dirProjection = Mat4f::CreateOrthographicProjection(50, 50, -50, 50);
+	auto dirProjection = Mat4f::CreateOrthographicProjection(100, 100, -100, 100);
 	for (auto* light : m_DirectionalLights)
 	{
 		auto& shadowData = light->GetShadowData();
-		i32 ShadowMapSize = 4096;
+		i32 ShadowMapSize = 2048;
 
 		//Create shadowmap and depth
 		if (!shadowData.shadowMap && !shadowData.depth)
@@ -45,7 +45,7 @@ void frostwave::ShadowRenderer::Render(Camera* camera)
 		auto f = forward;
 		f = Vec3f(f.x, 0, f.z).GetNormalized();
 
-		auto v = Mat4f::CreateTransform(pos + f * 25.0f, rot, 1);
+		auto v = Mat4f::CreateTransform(pos/* + f * 25.0f*/, rot, 1);
 		auto vp = v.FastInverse(v) * dirProjection;
 
 		//
@@ -59,7 +59,7 @@ void frostwave::ShadowRenderer::Render(Camera* camera)
 
 		vp *= roundMatrix;
 
-		shadowData.ViewProj = vp;
+		shadowData.viewProj = vp;
 
 		m_FrameBufferData.VP = vp;
 		m_FrameBuffer.SetData(m_FrameBufferData);

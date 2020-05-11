@@ -52,44 +52,30 @@ void FreeCamera::Update(f32 dt)
 		m_Modifier = 0.1f;
 	}
 
+	auto pos = m_Camera->GetPosition();
+	f32 speed = m_Speed * m_Modifier * dt;
+
 	if (window->GetInput()->IsKeyDown(fw::Key::W))
-	{
-		auto pos = m_Camera->GetPosition();
-		pos += orientation.GetForwardVector() * m_Speed * m_Modifier * dt;
-		m_Camera->SetPosition(pos);
-	}
+		pos += orientation.GetForwardVector() * speed;
+
 	if (window->GetInput()->IsKeyDown(fw::Key::S))
-	{
-		auto pos = m_Camera->GetPosition();
-		pos -= orientation.GetForwardVector() * m_Speed * m_Modifier * dt;
-		m_Camera->SetPosition(pos);
-	}
+		pos -= orientation.GetForwardVector() * speed;
+
 	if (window->GetInput()->IsKeyDown(fw::Key::D))
-	{
-		auto pos = m_Camera->GetPosition();
-		pos += orientation.GetRightVector() * m_Speed * m_Modifier * dt;
-		m_Camera->SetPosition(pos);
-	}
+		pos += orientation.GetRightVector() * speed;
+
 	if (window->GetInput()->IsKeyDown(fw::Key::A))
-	{
-		auto pos = m_Camera->GetPosition();
-		pos -= orientation.GetRightVector() * m_Speed * m_Modifier * dt;
-		m_Camera->SetPosition(pos);
-	}
+		pos -= orientation.GetRightVector() * speed;
+
 	if (window->GetInput()->IsKeyDown(fw::Key::E))
-	{
-		auto pos = m_Camera->GetPosition();
-		pos += fw::Vec3f(0,1,0) * m_Speed * m_Modifier * dt;
-		m_Camera->SetPosition(pos);
-	}
+		pos += fw::Vec3f(0,1,0) * speed;
+
 	if (window->GetInput()->IsKeyDown(fw::Key::Q))
-	{
-		auto pos = m_Camera->GetPosition();
-		pos -= fw::Vec3f(0, 1, 0) * m_Speed * m_Modifier * dt;
-		m_Camera->SetPosition(pos);
-	}
+		pos -= fw::Vec3f(0, 1, 0) * speed;
+
 	m_Modifier = 1.0f;
 
+	m_Camera->SetPosition(pos);
 	m_Camera->SetRotation(orientation);
 	m_Camera->Update();
 }

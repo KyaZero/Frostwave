@@ -10,8 +10,8 @@ namespace frostwave
 	class BaseLight
 	{
 	public:
-		BaseLight() : m_Color(Vec3f(1,1,1)), m_Intensity(1.0f) { }
-		BaseLight(Vec3f color, f32 intensity = 1.0f) : m_Color(color), m_Intensity(intensity) { }
+		BaseLight() : m_Color(Vec3f(1,1,1)), m_Intensity(10.0f) { }
+		BaseLight(Vec3f color, f32 intensity = 10.0f) : m_Color(color), m_Intensity(intensity) { }
 
 		virtual ~BaseLight() { }
 
@@ -31,7 +31,7 @@ namespace frostwave
 	public:
 		PointLight() : BaseLight(), m_Position(Vec3f()), m_Radius(0) { }
 		PointLight(Vec3f position, f32 radius) : BaseLight(), m_Position(position), m_Radius(radius) { }
-		PointLight(Vec3f position, f32 radius, Vec3f color, f32 intensity = 1.0f) : BaseLight(color, intensity), m_Position(position), m_Radius(radius) { }
+		PointLight(Vec3f position, f32 radius, Vec3f color, f32 intensity = 10.0f) : BaseLight(color, intensity), m_Position(position), m_Radius(radius) { }
 
 		virtual ~PointLight() { }
 
@@ -45,7 +45,7 @@ namespace frostwave
 
 	struct DirectionalLightShadowData
 	{
-		Mat4f ViewProj;
+		Mat4f viewProj;
 		Texture* shadowMap = nullptr;
 		Texture* depth = nullptr;
 	};
@@ -55,7 +55,7 @@ namespace frostwave
 	public:
 		DirectionalLight() : BaseLight(), m_Direction(Vec3f(1, 1, 1)) { }
 		DirectionalLight(Vec3f direction) : BaseLight(), m_Direction(direction) { }
-		DirectionalLight(Vec3f direction, Vec3f color, f32 intensity = 1.0f) : BaseLight(color, intensity), m_Direction(direction) { }
+		DirectionalLight(Vec3f direction, Vec3f color, f32 intensity = 10.0f) : BaseLight(color, intensity), m_Direction(direction) { }
 
 		virtual ~DirectionalLight() { if(m_ShadowData.depth) Free(m_ShadowData.depth); if (m_ShadowData.shadowMap) Free(m_ShadowData.shadowMap); }
 
@@ -68,20 +68,5 @@ namespace frostwave
 
 		friend class ShadowRenderer;
 		DirectionalLightShadowData m_ShadowData;
-	};
-
-	class EnvironmentLight : public BaseLight
-	{
-	public:
-		EnvironmentLight() : BaseLight(), m_Cubemap(nullptr) { }
-		EnvironmentLight(Texture* cubemap) : BaseLight(), m_Cubemap(cubemap) { }
-		EnvironmentLight(Texture* cubemap, Vec3f color, f32 intensity = 1.0f) : BaseLight(color, intensity), m_Cubemap(cubemap) { }
-
-		virtual ~EnvironmentLight() { if(m_Cubemap) Free(m_Cubemap); }
-
-		Texture* GetCubemap() const { return m_Cubemap; }
-
-	private:
-		Texture* m_Cubemap;
 	};
 }

@@ -340,4 +340,13 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
-/AYAYA/lib
+/lib/Game_Retail.lib
+/lib/Game_Release.lib
+/lib/Game_Debug.lib
+/lib/Engine_Retail.lib
+/lib/Engine_Release.lib
+/lib/Engine_Debug.lib
+/lib/Editor_Retail.lib
+/lib/Editor_Release.lib
+/lib/Editor_Debug.lib
+/lib/assimp-vc140-mt.lib

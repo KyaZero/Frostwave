@@ -24,7 +24,7 @@ frostwave::PostProcessor::~PostProcessor()
 void frostwave::PostProcessor::Init()
 {
 	m_FrameBuffer.Init(sizeof(FrameBuffer), BufferUsage::Dynamic, BufferType::Constant, 0, &m_FrameBufferData);
-	m_FullscreenVertexShader = Allocate<Shader>(Shader::Type::Vertex, "assets/shaders/fullscreen_vs.fx");
+	m_FullscreenVertexShader = Allocate<Shader>(Shader::Type::Vertex, "../source/Engine/Shaders/fullscreen_vs.fx");
 
 	//ssao stuff
 	for (u32 i = 0; i < 16; ++i)
@@ -52,7 +52,7 @@ void frostwave::PostProcessor::Render(Texture* backBuffer, Camera* camera, Direc
 	m_FrameBufferData.projection = camera->GetProjection();
 	m_FrameBufferData.invProjection = Mat4f::Inverse(camera->GetProjection());
 	m_FrameBufferData.invView = Mat4f::Inverse(camera->GetView());
-	m_FrameBufferData.lightMatrix = light ? light->GetShadowData().ViewProj : Mat4f();
+	m_FrameBufferData.lightMatrix = light ? light->GetShadowData().viewProj : Mat4f();
 	m_FrameBufferData.cameraPos = camera->GetPosition();
 	m_FrameBufferData.lightDirection = light ? light->GetDirection().GetNormalized() : Vec4f();
 	m_FrameBufferData.lightColor = light ? Vec4f(light->GetColor(), light->GetIntensity()) : Vec4f();
@@ -91,10 +91,19 @@ void frostwave::PostProcessor::Push(Technique tech)
 	m_Techniques.push_back(tech);
 }
 
+void frostwave::PostProcessor::Clear()
+{
+	m_Techniques.clear();
+}
+
 void frostwave::PostProcessor::RenderStage(PostProcessStage stage, Texture* backBuffer)
 {
-	if(!stage.renderToBackbuffer)
+	if (!stage.renderToBackbuffer)
+	{
 		m_FrameBufferData.size = Vec2f((f32)stage.renderTarget->GetSize().x, (f32)stage.renderTarget->GetSize().y);
+		m_FrameBufferData.texelSize = Vec2f(1.0f / m_FrameBufferData.size.x, 1.0f / m_FrameBufferData.size.y);
+	}
+
 	m_FrameBuffer.SetData(m_FrameBufferData);
 	m_FrameBuffer.Bind(0);
 

@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include <Engine/Graphics/RenderManager.h>
+#include <Engine/Graphics/imgui/imgui.h>
 #include <Engine/Graphics/Framework.h>
 #include <Engine/Platform/Window.h>
 #include <Engine/Graphics/Shader.h>
@@ -67,10 +68,14 @@ void frostwave::Engine::Tick()
 	f32 dt = m_Timer.GetDeltaTime();
 	FileWatcher::Get()->Update(dt);
 
-	m_Framework->BeginFrame({ 1,0,1,1 });
+	m_Framework->BeginFrame({ 0.2f,0.2f,0.2f,1 });
 
 #ifdef _DEBUG
 	m_DebugVisualizer.Draw();
+#endif
+
+#ifdef WITH_EDITOR
+	ImGui::DockSpaceOverViewport();
 #endif
 
 	m_GameUpdate(dt);

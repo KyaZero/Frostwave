@@ -15,6 +15,7 @@ namespace frostwave
 			Albedo,
 			Normal,
 			RMAO,
+			Emissive,
 			Count
 		};
 

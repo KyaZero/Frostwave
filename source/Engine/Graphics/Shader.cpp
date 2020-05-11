@@ -14,9 +14,10 @@
 
 struct frostwave::Shader::Data
 {
-	std::string sourcePS, sourceVS;
+	std::string sourcePS, sourceVS, sourceGS;
 	ID3D11PixelShader* pixel = nullptr;
 	ID3D11VertexShader* vertex = nullptr;
+	ID3D11GeometryShader* geometry = nullptr;
 	ID3D11InputLayout* layout = nullptr;
 	u32 type;
 
@@ -148,9 +149,9 @@ frostwave::Shader::Shader() : m_Data(nullptr)
 {
 }
 
-frostwave::Shader::Shader(u32 type, const std::string& source, const std::string& sourceVS) : m_Data(nullptr)
+frostwave::Shader::Shader(u32 type, const std::string& pixel, const std::string& vertex, const std::string& geometry) : m_Data(nullptr)
 {
-	Load(type, source, sourceVS);
+	Load(type, pixel, vertex, geometry);
 }
 
 frostwave::Shader::~Shader()
@@ -170,10 +171,15 @@ frostwave::Shader::~Shader()
 		if (m_Data->pixel)
 			SafeRelease(&m_Data->pixel);
 	}
+	if (m_Data->type & Type::Geometry)
+	{
+		if (m_Data->geometry)
+			SafeRelease(&m_Data->geometry);
+	}
 	Free(m_Data);
 }
 
-void frostwave::Shader::Load(u32 type, const std::string& pixel, const std::string& vertex)
+void frostwave::Shader::Load(u32 type, const std::string& pixel, const std::string& vertex, const std::string& geometry)
 {
 	if(!m_Data)
 		m_Data = Allocate();
@@ -181,8 +187,9 @@ void frostwave::Shader::Load(u32 type, const std::string& pixel, const std::stri
 	m_Data->type = type;
 	m_Data->sourcePS = pixel;
 	m_Data->sourceVS = vertex.length() > 0 ? vertex : pixel;
+	m_Data->sourceGS = geometry.length() > 0 ? geometry : pixel;
 
-	auto compileVertex = [&]()
+	auto CompileVertex = [&]()
 	{
 		if (m_Data->type & Type::Vertex)
 		{
@@ -197,11 +204,12 @@ void frostwave::Shader::Load(u32 type, const std::string& pixel, const std::stri
 				CreateInputLayout(m_Data->sourceVS, (char*)vs->GetBufferPointer(), (u32)vs->GetBufferSize(), &m_Data->layout);
 				VERBOSE_LOG("Compiled Vertex Shader '%s'", m_Data->sourceVS.c_str());
 			}
-			if (vs) vs->Release();
+			if (vs) 
+				vs->Release();
 		}
 	};
 
-	auto compilePixel = [&]() 
+	auto CompilePixel = [&]() 
 	{
 		if (m_Data->type & Type::Pixel)
 		{
@@ -214,19 +222,43 @@ void frostwave::Shader::Load(u32 type, const std::string& pixel, const std::stri
 				ErrorCheck(Framework::GetDevice()->CreatePixelShader(ps->GetBufferPointer(), ps->GetBufferSize(), nullptr, &m_Data->pixel));
 				VERBOSE_LOG("Compiled Pixel Shader '%s'", m_Data->sourcePS.c_str());
 			}
-			if (ps) ps->Release();
+			if (ps) 
+				ps->Release();
 		}
 	};
 
-	compileVertex();
-	compilePixel();
+	auto CompileGeometry = [&]()
+	{
+		if (m_Data->type & Type::Geometry)
+		{
+			ID3DBlob* gs = nullptr;
+			if (CompileShader(m_Data->sourceGS, "GSMain", "gs_5_0", m_Data->defines, &gs))
+			{
+				if (m_Data->geometry)
+					SafeRelease(&m_Data->geometry);
+
+				ErrorCheck(Framework::GetDevice()->CreateGeometryShader(gs->GetBufferPointer(), gs->GetBufferSize(), nullptr, &m_Data->geometry));
+				VERBOSE_LOG("Compiled Geometry Shader '%s'", m_Data->sourceGS.c_str());
+			}
+			if (gs) 
+				gs->Release();
+		}
+	};
+
+	CompileVertex();
+	CompilePixel();
+	CompileGeometry();
 
 	FileWatcher::Get()->Register(this, m_Data->sourcePS, [=](const std::string&) {
-		compilePixel();
+		CompilePixel();
 	});
 
 	FileWatcher::Get()->Register(this, m_Data->sourceVS, [=](const std::string&) {
-		compileVertex();
+		CompileVertex();
+	});
+
+	FileWatcher::Get()->Register(this, m_Data->sourceGS, [=](const std::string&) {
+		CompileGeometry();
 	});
 }
 
@@ -241,22 +273,26 @@ void frostwave::Shader::Bind(u32 mask) const
 	{
 		Framework::GetContext()->PSSetShader(m_Data->pixel, nullptr, 0);
 	}
-}
-
-void frostwave::Shader::AddDefine(const std::string& name, const std::string& value)
-{
-	name; value;
-	for (size_t i = 0; i < 16; i++)
+	if (m_Data->type & Type::Geometry && !(mask & Type::Geometry))
 	{
-		if (m_Data->defines[i].Name || m_Data->defines[i].Definition)
-			continue;
-
-		m_Data->defines[i].Name = name.c_str();
-		m_Data->defines[i].Definition = value.c_str();
-		break;
+		Framework::GetContext()->GSSetShader(m_Data->geometry, nullptr, 0);
 	}
-	Load(m_Data->type, m_Data->sourcePS, m_Data->sourceVS);
 }
+
+//void frostwave::Shader::AddDefine(const std::string& name, const std::string& value)
+//{
+//	name; value;
+//	for (size_t i = 0; i < 16; i++)
+//	{
+//		if (m_Data->defines[i].Name || m_Data->defines[i].Definition)
+//			continue;
+//
+//		m_Data->defines[i].Name = name.c_str();
+//		m_Data->defines[i].Definition = value.c_str();
+//		break;
+//	}
+//	Load(m_Data->type, m_Data->sourcePS, m_Data->sourceVS);
+//}
 
 bool frostwave::Shader::IsInitialized()
 {

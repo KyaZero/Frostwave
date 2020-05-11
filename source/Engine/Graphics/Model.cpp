@@ -22,7 +22,7 @@ frostwave::Model::~Model()
 	{
 		for (auto* tex : mesh->textures)
 		{
-			if(tex)
+			if (tex)
 				Free(tex);
 		}
 		Free(mesh);
@@ -44,7 +44,7 @@ void frostwave::Model::Load(const std::string& path)
 
 	ProcessNode(scene->mRootNode, scene);
 
-	m_Shader.Load(fw::Shader::Type::Vertex | fw::Shader::Type::Pixel, "assets/shaders/model_ps.fx", "assets/shaders/general_vs.fx");
+	//m_Shader.Load(fw::Shader::Type::Vertex | fw::Shader::Type::Pixel, "assets/shaders/model_ps.fx", "assets/shaders/general_vs.fx");
 }
 
 void frostwave::Model::AddMesh(Mesh* mesh)
@@ -99,6 +99,51 @@ const frostwave::Mat4f& frostwave::Model::GetTransform()
 	}
 
 	return m_Transform;
+}
+
+frostwave::Model* frostwave::Model::GetCube()
+{
+	/*
+		Vec4f position;
+		Vec4f normal;
+		Vec4f tangent;
+		Vec4f bitangent;
+		Vec4f color;
+		Vec2f uv;
+	*/
+	std::vector<Vertex> vertices;
+
+	vertices.push_back({ {0.5f, 0.5f, 0.5f, 1.0f}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {1,1,1,1}, {1, 0} });
+	vertices.push_back({ {0.5f, 0.5f, -0.5f, 1.0f}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {1,1,1,1}, {1, 0} });
+	vertices.push_back({ {0.5f, -0.5f, 0.5f, 1.0f}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {1,1,1,1}, {1, 1} });
+	vertices.push_back({ {-0.5f, 0.5f, 0.5f, 1.0f}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {1,1,1,1}, {0, 0} });
+	vertices.push_back({ {0.5f, -0.5f, -0.5f, 1.0f}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {1,1,1,1}, {1,1} });
+	vertices.push_back({ {-0.5f, 0.5f, -0.5f, 1.0f}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {1,1,1,1}, {0,0} });
+	vertices.push_back({ {-0.5f, -0.5f, 0.5f, 1.0f}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {1,1,1,1}, {0,1} });
+	vertices.push_back({ {-0.5f, -0.5f, -0.5f, 1.0f}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {1,1,1,1}, {0,1} });
+
+	std::vector<u32> indices =
+	{
+		0, 2, 1,
+		0, 1, 3,
+		0, 3, 2,
+		1, 2, 4,
+		2, 3, 6,
+		3, 1, 5,
+		4, 5, 1,
+		5, 6, 3,
+		6, 4, 2,
+		7, 6, 5,
+		7, 5, 4,
+		7, 4, 6
+	};
+
+	Mesh* m = Allocate<Mesh>(vertices, indices, std::array<Texture*, MeshTextures::Count>{nullptr});
+
+	Model* model = Allocate();
+	//model->m_Shader.Load(Shader::Type::Vertex | Shader::Type::Pixel, "assets/shaders/model_ps.fx", "assets/shaders/model_vs.fx");
+	model->AddMesh(m);
+	return model;
 }
 
 frostwave::Model* frostwave::Model::GetSphere(f32 radius, i32 sliceCount, i32 stackCount, const Vec4f& color)
@@ -182,7 +227,7 @@ frostwave::Model* frostwave::Model::GetSphere(f32 radius, i32 sliceCount, i32 st
 	Mesh* m = Allocate<Mesh>(vertices, indices, std::array<Texture*, MeshTextures::Count>{nullptr});
 
 	Model* model = Allocate();
-	model->m_Shader.Load(Shader::Type::Vertex | Shader::Type::Pixel, "assets/shaders/model_ps.fx", "assets/shaders/model_vs.fx");
+	//model->m_Shader.Load(Shader::Type::Vertex | Shader::Type::Pixel, "assets/shaders/model_ps.fx", "assets/shaders/model_vs.fx");
 	model->AddMesh(m);
 	return model;
 }
@@ -192,7 +237,12 @@ frostwave::Texture* frostwave::Model::LoadMaterialTexture(aiMaterial* material, 
 	Texture* texture = Allocate();
 	aiString str;
 	material->GetTexture(type, 0, &str);
-	if (str.length > 0 && texture->Load(m_Path + str.C_Str()))
+
+	//Dont know why but the aistring misses the first 4 characters in the texture path.
+	std::string hacked = str.data - 4;
+	hacked = hacked.substr(0, hacked.find(".png")) + ".dds";
+
+	if (str.length > 0 && texture->Load(m_Path + hacked.c_str()))
 	{
 	}
 	else //Manually try to find matching texture file
@@ -200,39 +250,39 @@ frostwave::Texture* frostwave::Model::LoadMaterialTexture(aiMaterial* material, 
 		switch (type)
 		{
 		case aiTextureType_DIFFUSE: //Albedo
-			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_A.dds")))
-				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_A.dds");
+			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_A.tga")))
+				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_A.tga");
 			else
 				texture->Load("assets/textures/default/default_A.dds");
 			break;
 		case aiTextureType_SHININESS: //Roughness
-			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_R.dds")))
-				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_R.dds");
+			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_R.tga")))
+				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_R.tga");
 			else
 				texture->Load("assets/textures/default/default_R.dds");
 			break;
 		case aiTextureType_UNKNOWN: //AmbientOcclusion
-			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_AO.dds")))
-				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_AO.dds");
+			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_AO.tga")))
+				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_AO.tga");
 			else
 				texture->Load("assets/textures/default/default_AO.dds");
 			break;
 		case aiTextureType_EMISSIVE: //Emissive
-			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_E.dds")))
-				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_E.dds");
+			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_E.tga")))
+				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_E.tga");
 			else
 				texture->Load("assets/textures/default/default_E.dds");
 			break;
 		case aiTextureType_HEIGHT:
 		case aiTextureType_NORMALS: //Normal
-			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_N.dds")))
-				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_N.dds");
+			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_N.tga")))
+				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_N.tga");
 			else
 				texture->Load("assets/textures/default/default_N.dds");
 			break;
 		case aiTextureType_AMBIENT: //Metalness
-			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_M.dds")))
-				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_M.dds");
+			if (std::filesystem::exists(std::filesystem::path(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_M.tga")))
+				texture->Load(m_Path + m_Name.substr(0, m_Name.find_last_of('.')) + "_M.tga");
 			else
 				texture->Load("assets/textures/default/default_M.dds");
 			break;
@@ -306,13 +356,13 @@ frostwave::Mesh* frostwave::Model::ProcessMesh(aiMesh* mesh, const aiScene* scen
 	{
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-		textures[MeshTextures::Albedo]				= LoadMaterialTexture(material, aiTextureType_DIFFUSE);		// TEXTURE_DEFINITION_ALBEDO
-		textures[MeshTextures::Normal]				= LoadMaterialTexture(material, aiTextureType_HEIGHT);		// TEXTURE_DEFINITION_NORMAL
-		textures[MeshTextures::Metalness]			= LoadMaterialTexture(material, aiTextureType_AMBIENT);
+		textures[MeshTextures::Albedo] = LoadMaterialTexture(material, aiTextureType_DIFFUSE);		// TEXTURE_DEFINITION_ALBEDO
+		textures[MeshTextures::Normal] = LoadMaterialTexture(material, aiTextureType_HEIGHT);		// TEXTURE_DEFINITION_NORMAL
+		textures[MeshTextures::Metalness] = LoadMaterialTexture(material, aiTextureType_AMBIENT);
 		// TEXTURE_DEFINITION_METALNESS
-		textures[MeshTextures::Roughness]			= LoadMaterialTexture(material, aiTextureType_SHININESS);	// TEXTURE_DEFINITION_ROUGHNESS
-		textures[MeshTextures::AmbientOcclusion]	= LoadMaterialTexture(material, aiTextureType_UNKNOWN);		// TEXTURE_DEFINITION_AMBIENTOCCLUSION
-		textures[MeshTextures::Emissive]			= LoadMaterialTexture(material, aiTextureType_EMISSIVE);	// TEXTURE_DEFINITION_EMISSIVE
+		textures[MeshTextures::Roughness] = LoadMaterialTexture(material, aiTextureType_SHININESS);	// TEXTURE_DEFINITION_ROUGHNESS
+		textures[MeshTextures::AmbientOcclusion] = LoadMaterialTexture(material, aiTextureType_UNKNOWN);		// TEXTURE_DEFINITION_AMBIENTOCCLUSION
+		textures[MeshTextures::Emissive] = LoadMaterialTexture(material, aiTextureType_EMISSIVE);	// TEXTURE_DEFINITION_EMISSIVE
 	}
 
 	return Allocate<Mesh>(vertices, indices, textures);
