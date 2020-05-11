@@ -349,4 +349,4 @@ healthchecksdb
 /lib/Editor_Retail.lib
 /lib/Editor_Release.lib
 /lib/Editor_Debug.lib
-/lib/assimp-vc140-mt.lib
+/lib/assimp-vc142-mt.lib
