@@ -13,6 +13,8 @@
 
 frostwave::RenderManager::RenderManager() : m_DirectionalLight(nullptr)
 {
+	m_Framework = Allocate();
+	m_RenderedScene = Allocate();
 	m_ForwardRenderer = Allocate();
 	m_DeferredRenderer = Allocate();
 	m_ShadowRenderer = Allocate();
@@ -70,10 +72,14 @@ frostwave::RenderManager::~RenderManager()
 	Free(m_LinearWrapSampler);
 	Free(m_PointClampSampler);
 	Free(m_PointWrapSampler);
+	Free(m_RenderedScene);
+	Free(m_Framework);
 }
 
 void frostwave::RenderManager::Init()
 {
+	m_Framework->Init();
+
 	m_LinearClampSampler = Allocate<Sampler>(Sampler::Filter::Linear, Sampler::Address::Clamp, Vec4f());
 	m_LinearClampSampler->Bind(0);
 
@@ -92,6 +98,9 @@ void frostwave::RenderManager::Init()
 	m_SkyboxRenderer->Init();
 	m_PostProcessor->Init();
 	m_StateManager.Init();
+
+	m_RenderedScene->Create(Window::Get()->GetBounds());
+
 	m_IntermediateTexture->Create(Window::Get()->GetBounds(), ImageFormat::DXGI_FORMAT_R32G32B32A32_FLOAT);
 	m_IntermediateTexture2->Create(Window::Get()->GetBounds(), ImageFormat::DXGI_FORMAT_R32G32B32A32_FLOAT);
 	m_IntermediateTexture3->Create(Window::Get()->GetBounds(), ImageFormat::DXGI_FORMAT_R32G32B32A32_FLOAT);
@@ -135,11 +144,11 @@ void frostwave::RenderManager::Init()
 		.format = ImageFormat::DXGI_FORMAT_R32G32B32A32_FLOAT,
 		.data = noiseTextureFloats,
 		.renderTarget = false
-	});
+		});
 
 	Window::Get()->Subscribe(WM_SIZE, [&](auto, auto) {
 		ResizeTextures(Window::Get()->GetWidth(), Window::Get()->GetHeight());
-	});
+		});
 
 	InitPostProcessing();
 	InitCubemap();
@@ -149,74 +158,90 @@ void frostwave::RenderManager::Init()
 	m_SkyboxRenderer->SetTexture(m_EnvironmentMap);
 }
 
-void frostwave::RenderManager::Render(f32 totalTime, Camera* camera, Texture* backBuffer)
+void frostwave::RenderManager::Render(f32 totalTime, Camera* camera, bool renderToBackbuffer)
 {
-	if (!camera)
+	if (camera)
 	{
-		ERROR_LOG("No camera set whilst in 3D render path... returning.");
-		return;
+
+		Framework::BeginEvent("Clear Textures");
+		ClearTextures();
+		Framework::EndEvent();
+
+		Texture::UnbindAll();
+
+		Framework::BeginEvent("Render Shadowmaps");
+		m_StateManager.SetRasterizerState(RenderStateManager::RasterizerStates::NoCull);
+		m_ShadowRenderer->Render(camera);
+		Texture::UnsetActiveTarget();
+		m_StateManager.SetRasterizerState(RenderStateManager::RasterizerStates::Default);
+		Framework::Timestamp("Render Shadowmaps");
+		Framework::EndEvent();
+
+		Framework::BeginEvent("Render Geometry to GBuffer");
+		m_GBuffer->SetAsActiveTarget(m_IntermediateDepth);
+		m_DeferredRenderer->RenderGeometry(totalTime, camera);
+		Framework::Timestamp("Render Geometry to GBuffer");
+		Framework::EndEvent();
+
+		Framework::BeginEvent("Render Deferred lighting");
+		m_StateManager.SetBlendState(RenderStateManager::BlendStates::Additive);
+		m_IntermediateTexture->SetAsActiveTarget();
+		m_GBuffer->SetAllAsResources();
+		m_IntermediateDepth->Bind(5);
+		m_DeferredRenderer->RenderLighting(totalTime, &m_StateManager);
+		m_GBuffer->RemoveAllAsResources();
+		Texture::Unbind(5);
+
+		Framework::Timestamp("Render Deferred lighting");
+		Framework::EndEvent();
+
+		//Render all alpha meshes (forward shading)
+		//Framework::BeginEvent("Render Forward");
+		//m_StateManager.SetRasterizerState(RenderStateManager::RasterizerStates::Default);
+		//m_StateManager.SetBlendState(RenderStateManager::BlendStates::AlphaBlend);
+		////m_IntermediateTexture->SetAsActiveTarget(m_IntermediateDepth);
+		////m_ForwardRenderer->Render(totalTime, camera);
+		//Framework::Timestamp("Render Forward");
+		//Framework::EndEvent();
+
+		//Render Skybox
+		Framework::BeginEvent("Render Skybox");
+		m_StateManager.SetBlendState(RenderStateManager::BlendStates::Disable);
+		m_IntermediateTexture->SetAsActiveTarget(m_IntermediateDepth);
+		m_StateManager.SetRasterizerState(RenderStateManager::RasterizerStates::FrontFace);
+		m_StateManager.SetDepthStencilState(RenderStateManager::DepthStencilStates::LessEquals);
+		m_SkyboxRenderer->Render(totalTime, camera);
+		m_StateManager.SetDepthStencilState(RenderStateManager::DepthStencilStates::Default);
+		m_StateManager.SetRasterizerState(RenderStateManager::RasterizerStates::Default);
+		Texture::Unbind(4);
+		Framework::Timestamp("Render Skybox");
+		Framework::EndEvent();
+
+		//Render post processing
+		m_StateManager.SetBlendState(RenderStateManager::BlendStates::Disable);
+		m_SSAONoiseTexture->Bind(15);
+		Framework::BeginEvent("Post Processing");
+		m_PostProcessor->Render(renderToBackbuffer ? m_Framework->GetBackbuffer() : m_RenderedScene, camera, m_DirectionalLight);
+		Framework::EndEvent();
+
+		//Editor will render to this instead
+		if (!renderToBackbuffer)
+			m_Framework->GetBackbuffer()->SetAsActiveTarget();
 	}
+	else
+	{
+		ERROR_LOG("No camera set.");
+	}
+}
 
-	Framework::BeginEvent("Clear Textures");
-	ClearTextures();
-	Framework::EndEvent();
+void frostwave::RenderManager::BeginFrame()
+{
+	m_Framework->BeginFrame({ 0.2f, 0.2f, 0.2f, 1 });
+}
 
-	Texture::UnbindAll();
-
-	Framework::BeginEvent("Render Shadowmaps");
-	m_StateManager.SetRasterizerState(RenderStateManager::RasterizerStates::NoCull);
-	m_ShadowRenderer->Render(camera);
-	Texture::UnsetActiveTarget();
-	m_StateManager.SetRasterizerState(RenderStateManager::RasterizerStates::Default);
-	Framework::Timestamp("Render Shadowmaps");
-	Framework::EndEvent();
-
-	Framework::BeginEvent("Render Geometry to GBuffer");
-	m_GBuffer->SetAsActiveTarget(m_IntermediateDepth);
-	m_DeferredRenderer->RenderGeometry(totalTime, camera);
-	Framework::Timestamp("Render Geometry to GBuffer");
-	Framework::EndEvent();
-
-	Framework::BeginEvent("Render Deferred lighting");
-	m_StateManager.SetBlendState(RenderStateManager::BlendStates::Additive);
-	m_IntermediateTexture->SetAsActiveTarget();
-	m_GBuffer->SetAllAsResources();
-	m_IntermediateDepth->Bind(5);
-	m_DeferredRenderer->RenderLighting(totalTime, &m_StateManager);
-	m_GBuffer->RemoveAllAsResources();
-	Texture::Unbind(5);
-
-	Framework::Timestamp("Render Deferred lighting");
-	Framework::EndEvent();
-
-	//Render all alpha meshes (forward shading)
-	//Framework::BeginEvent("Render Forward");
-	//m_StateManager.SetRasterizerState(RenderStateManager::RasterizerStates::Default);
-	//m_StateManager.SetBlendState(RenderStateManager::BlendStates::AlphaBlend);
-	////m_IntermediateTexture->SetAsActiveTarget(m_IntermediateDepth);
-	////m_ForwardRenderer->Render(totalTime, camera);
-	//Framework::Timestamp("Render Forward");
-	//Framework::EndEvent();
-
-	//Render Skybox
-	Framework::BeginEvent("Render Skybox");
-	m_StateManager.SetBlendState(RenderStateManager::BlendStates::Disable);
-	m_IntermediateTexture->SetAsActiveTarget(m_IntermediateDepth);
-	m_StateManager.SetRasterizerState(RenderStateManager::RasterizerStates::FrontFace);
-	m_StateManager.SetDepthStencilState(RenderStateManager::DepthStencilStates::LessEquals);
-	m_SkyboxRenderer->Render(totalTime, camera);
-	m_StateManager.SetDepthStencilState(RenderStateManager::DepthStencilStates::Default);
-	m_StateManager.SetRasterizerState(RenderStateManager::RasterizerStates::Default);
-	Texture::Unbind(4);
-	Framework::Timestamp("Render Skybox");
-	Framework::EndEvent();
-
-	//Render post processing
-	m_StateManager.SetBlendState(RenderStateManager::BlendStates::Disable);
-	m_SSAONoiseTexture->Bind(15);
-	Framework::BeginEvent("Post Processing");
-	m_PostProcessor->Render(backBuffer, camera, m_DirectionalLight);
-	Framework::EndEvent();
+void frostwave::RenderManager::EndFrame()
+{
+	m_Framework->EndFrame();
 }
 
 void frostwave::RenderManager::ResizeTextures(i32 width, i32 height)
@@ -230,6 +255,7 @@ void frostwave::RenderManager::ResizeTextures(i32 width, i32 height)
 		texture->Release();
 	}
 
+	m_RenderedScene->Release();
 	m_IntermediateTexture->Release();
 	m_IntermediateTexture2->Release();
 	m_IntermediateTexture3->Release();
@@ -242,7 +268,7 @@ void frostwave::RenderManager::ResizeTextures(i32 width, i32 height)
 	m_IntermediateDepth->Release();
 	m_GBuffer->Release();
 
-	m_GBuffer->Create(size);
+	m_RenderedScene->Create(size);
 	m_IntermediateTexture->Create(size, ImageFormat::DXGI_FORMAT_R32G32B32A32_FLOAT);
 	m_IntermediateTexture2->Create(size, ImageFormat::DXGI_FORMAT_R32G32B32A32_FLOAT);
 	m_IntermediateTexture3->Create(size, ImageFormat::DXGI_FORMAT_R32G32B32A32_FLOAT);
@@ -253,6 +279,7 @@ void frostwave::RenderManager::ResizeTextures(i32 width, i32 height)
 	m_BloomTexture->Create(size, ImageFormat::DXGI_FORMAT_R32G32B32A32_FLOAT);
 	m_ResolveHDRTexture->Create(size);
 	m_IntermediateDepth->CreateDepth(size);
+	m_GBuffer->Create(size);
 
 	m_WhitepointTextures.clear();
 	i32 w = size.x;
@@ -270,6 +297,11 @@ void frostwave::RenderManager::ResizeTextures(i32 width, i32 height)
 
 	//Have to reinit
 	InitPostProcessing();
+}
+
+frostwave::Texture* frostwave::RenderManager::GetRenderedScene() const
+{
+	return m_RenderedScene;
 }
 
 void frostwave::RenderManager::Submit(Model* model)
@@ -347,6 +379,13 @@ void frostwave::RenderManager::InitPostProcessing()
 	volumetricLighting.Push(PostProcessStage("../source/Engine/Shaders/volumetric_lighting_blend_ps.fx", { m_IntermediateTexture, m_BloomTexture }, m_IntermediateTexture2, "Blend Volumetrics with Scene"));
 	m_PostProcessor->Push(volumetricLighting);
 
+	Technique ssr = { };
+	ssr.name = "Screen Space Reflections";
+	ssr.Push(PostProcessStage("../source/Engine/Shaders/ssr_ps.fx", { m_IntermediateTexture2, m_IntermediateDepth, m_GBuffer->GetTexture(GBuffer::Textures::Normal), m_GBuffer->GetTexture(GBuffer::Textures::RMAO) }, m_IntermediateTexture, "Raymarching"));
+	ssr.Push(PostProcessStage("../source/Engine/Shaders/ssr_blend_ps.fx", { m_IntermediateTexture2, m_IntermediateTexture }, m_BloomTexture, "Blend Screen Space Reflections with Scene"));
+	ssr.Push(PostProcessStage("../source/Engine/Shaders/copy_ps.fx", { m_BloomTexture }, m_IntermediateTexture2, "Copy"));
+	m_PostProcessor->Push(ssr);
+
 	Technique FXAA = { };
 	FXAA.name = "FXAA";
 	FXAA.Push(PostProcessStage("../source/Engine/Shaders/fxaa_luminance_ps.fx", { m_IntermediateTexture2 }, m_IntermediateTexture, "Luminance"));
@@ -381,7 +420,7 @@ void frostwave::RenderManager::InitCubemap()
 			.data = data,
 			.renderTarget = true,
 			.hdr = true
-		});
+			});
 		stbi_image_free(data);
 	}
 	else

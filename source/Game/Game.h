@@ -1,6 +1,7 @@
 #pragma once
 #include <Engine/Core/Types.h>
 #include <Engine/Graphics/Lights.h>
+#include <Engine/Graphics/Model.h>
 #include "FreeCamera.h"
 
 namespace frostwave
@@ -19,4 +20,5 @@ public:
 private:
 	FreeCamera* m_Camera;
 	fw::DirectionalLight* m_Light;
+	fw::Model* m_Sponza;
 };

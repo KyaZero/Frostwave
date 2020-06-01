@@ -11,7 +11,6 @@
 
 namespace frostwave
 {
-	class Framework;
 	class RenderManager;
 	class Window;
 	class Scene;
@@ -28,8 +27,6 @@ namespace frostwave
 
 	private:
 		RenderManager* m_RenderManager;
-		Texture* m_RenderedScene;
-		Framework* m_Framework;
 		Scene* m_Scene;
 		Timer m_Timer;
 #ifdef _DEBUG

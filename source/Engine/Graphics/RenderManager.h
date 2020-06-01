@@ -8,6 +8,7 @@
 
 namespace frostwave
 {
+	class Framework;
 	class Camera;
 	class Texture;
 	class ForwardRenderer;
@@ -23,9 +24,14 @@ namespace frostwave
 
 		void Init();
 		void InitCubemap();
-		void Render(f32 totalTime, Camera* camera, Texture* backBuffer);
+		void Render(f32 totalTime, Camera* camera, bool renderToBackbuffer = true);
+
+		void BeginFrame();
+		void EndFrame();
 
 		void ResizeTextures(i32 width, i32 height);
+
+		Texture* GetRenderedScene() const;
 
 		void Submit(Model* model);
 		void Submit(PointLight* light);
@@ -34,6 +40,9 @@ namespace frostwave
 	private:
 		void ClearTextures();
 		void InitPostProcessing();
+
+		Framework* m_Framework;
+		Texture* m_RenderedScene;
 
 		Texture* m_IntermediateTexture;
 		Texture* m_IntermediateTexture2;

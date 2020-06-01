@@ -240,7 +240,6 @@ frostwave::Texture* frostwave::Model::LoadMaterialTexture(aiMaterial* material, 
 
 	//Dont know why but the aistring misses the first 4 characters in the texture path.
 	std::string hacked = str.data - 4;
-	hacked = hacked.substr(0, hacked.find(".png")) + ".dds";
 
 	if (str.length > 0 && texture->Load(m_Path + hacked.c_str()))
 	{

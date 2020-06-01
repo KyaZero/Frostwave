@@ -15,7 +15,7 @@ float4 PSMain(PixelInput input) : SV_TARGET
 	float3 resource = fullscreen_texture.Sample(default_sampler, input.uv).rgb;
 
     float luminance = dot(resource, float3(0.2126729f,  0.7151522f, 0.0721750f));
-    float cutoff = 4;
+    float cutoff = 2;
 
     if (luminance >= cutoff)
         return float4(resource, 1);

@@ -1,7 +1,6 @@
 #include "Engine.h"
 #include <Engine/Graphics/RenderManager.h>
 #include <Engine/Graphics/imgui/imgui.h>
-#include <Engine/Graphics/Framework.h>
 #include <Engine/Platform/Window.h>
 #include <Engine/Graphics/Shader.h>
 #include <Engine/Graphics/Camera.h>
@@ -11,7 +10,7 @@
 #include <filesystem>
 #include <cassert>
 
-#undef WITH_EDITOR
+//#undef WITH_EDITOR
 
 frostwave::Engine::Engine(Size allocatedMemory)
 {
@@ -19,18 +18,14 @@ frostwave::Engine::Engine(Size allocatedMemory)
 	Logger::Create();
 	Logger::SetLevel(Logger::Level::Info);
 
-	m_Framework = Allocate();
 	m_RenderManager = Allocate();
 	m_Scene = Allocate();
 }
 
 frostwave::Engine::~Engine()
 {
-	Free(m_RenderedScene);
-
 	Free(m_Scene);
 	Free(m_RenderManager);
-	Free(m_Framework);
 
 	Logger::Destroy();
 	Allocator::Destroy();
@@ -44,10 +39,7 @@ void frostwave::Engine::Init(std::function<void(f32)> gameUpdate, std::function<
 	settings.fullscreen = false;
 	settings.title = L"Frostwave";
 	Window::Get()->Init(settings);
-	m_Framework->Init();
 	m_RenderManager->Init();
-
-	m_RenderedScene = Allocate<Texture>(Window::Get()->GetBounds());
 
 	gameInit();
 
@@ -64,11 +56,11 @@ void frostwave::Engine::Tick()
 	if (Window::Get()->GetInput()->IsKeyPressed(fw::Key::ESCAPE))
 		Shutdown();
 
+	m_RenderManager->BeginFrame();
+
 	m_Timer.Update();
 	f32 dt = m_Timer.GetDeltaTime();
 	FileWatcher::Get()->Update(dt);
-
-	m_Framework->BeginFrame({ 0.2f,0.2f,0.2f,1 });
 
 #ifdef _DEBUG
 	m_DebugVisualizer.Draw();
@@ -83,13 +75,12 @@ void frostwave::Engine::Tick()
 	m_Scene->Submit(m_RenderManager);
 
 #ifdef WITH_EDITOR
-	m_RenderManager->Render(m_Timer.GetTotalTime(), m_Scene->GetCamera(), m_RenderedScene);
-	m_Framework->GetBackbuffer()->SetAsActiveTarget();
-	m_EditorUpdate(dt, m_RenderedScene);
+	m_RenderManager->Render(m_Timer.GetTotalTime(), m_Scene->GetCamera(), false);
+	m_EditorUpdate(dt, m_RenderManager->GetRenderedScene());
 #else
-	m_RenderManager->Render(m_Timer.GetTotalTime(), m_Scene->GetCamera(), m_Framework->GetBackbuffer());
+	m_RenderManager->Render(m_Timer.GetTotalTime(), m_Scene->GetCamera());
 #endif
-	m_Framework->EndFrame();
+	m_RenderManager->EndFrame();
 }
 
 void frostwave::Engine::Shutdown()

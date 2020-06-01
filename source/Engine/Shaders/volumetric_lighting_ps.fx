@@ -4,7 +4,7 @@ Texture2D depth_texture: register(t0);
 Texture2D shadow_map : register(t8);
 SamplerState default_sampler : register(s0);
 
-#define G_SCATTERING 0.75
+#define G_SCATTERING 0.85
 #define G_SKYBOX_SCATTERING 0.95
 #define NB_STEPS 30
 #define PI 3.1415

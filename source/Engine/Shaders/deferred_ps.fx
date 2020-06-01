@@ -11,9 +11,9 @@ SamplerState default_sampler : register(s1);
 
 GBufferOutput PSMain(PixelInput input)
 {
-    if(albedo_texture.SampleLevel(default_sampler, input.uv, 0).a < 1) 
-        discard;
     float3 albedo_map = GammaToLinear(albedo_texture.Sample(default_sampler, input.uv).rgb);
+    if (length(albedo_map) > 0 && albedo_texture.SampleLevel(default_sampler, input.uv, 0).a < 1) 
+        discard;
     float3 normal_map = normal_texture.Sample(default_sampler, input.uv).rgb;
     float roughness_map = roughness_texture.Sample(default_sampler, input.uv).r;
     float metallic_map = metallic_texture.Sample(default_sampler, input.uv).r;
@@ -24,7 +24,7 @@ GBufferOutput PSMain(PixelInput input)
     float3 albedo = material.albedo.rgb;
     float roughness = material.roughness;
     float metallic = material.metallic;
-    float ambient = 1;
+    float ambient = material.ao;
     float emissive = material.emissive;
 
     if(length(normal_map) > 0)
@@ -37,19 +37,19 @@ GBufferOutput PSMain(PixelInput input)
         normal = mul(tbn, n).xyz;
     }
 
-    if(length(albedo_map) > 0)
+    if (material.albedo.a < 0)
         albedo = albedo_map;
 
-    if(length(roughness_map) > 0)
+    if (material.roughness < 0)
         roughness = roughness_map;
 
-    if(length(metallic_map) > 0)    
+    if(material.metallic < 0)
         metallic = metallic_map;
 
-    if(length(ambient_map) > 0)
+    if(material.ao < 0)
         ambient = ambient_map;
 
-    if(length(emissive_map) > 0)
+    if(material.emissive < 0)
         emissive = emissive_map;
 
     GBufferOutput gbuffer;

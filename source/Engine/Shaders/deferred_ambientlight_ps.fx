@@ -10,6 +10,7 @@ TextureCube irradiance_map  : register(t14);
 TextureCube prefiltered_map : register(t15);
 Texture2D brdf_map          : register(t16);
 
+SamplerState linear_clamp_sampler : register(s0);
 SamplerState default_sampler: register(s1);
 
 float4 PSMain(PixelInputFullscreen input) : SV_TARGET
@@ -31,17 +32,17 @@ float4 PSMain(PixelInputFullscreen input) : SV_TARGET
     float3 R = reflect(-V, N);
 
     const float MAX_REFLECTION_LOD = 4.0;
-    float3 prefiltered_color = prefiltered_map.SampleLevel(default_sampler, R, roughness * MAX_REFLECTION_LOD).rgb;
+    float3 prefiltered_color = prefiltered_map.SampleLevel(linear_clamp_sampler, R, roughness * MAX_REFLECTION_LOD).rgb;
 
     float3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
     float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
-    float2 env_BRDF = brdf_map.Sample(default_sampler, float2(max(dot(N, V), 0.0), roughness)).rg;
+    float2 env_BRDF = brdf_map.Sample(linear_clamp_sampler, float2(max(dot(N, V), 0.0), roughness)).rg;
     float3 specular = prefiltered_color * (F * env_BRDF.x + env_BRDF.y);
 
-    float3 irradiance = irradiance_map.Sample(default_sampler, N).rgb;
+    float3 irradiance = irradiance_map.Sample(linear_clamp_sampler, N).rgb;
     float3 diffuse    = irradiance * albedo;
     float3 ambient    = (kD * diffuse + specular) * ao; 
 

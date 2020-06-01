@@ -22,8 +22,8 @@ void frostwave::Editor::Update(Engine* engine, f32 dt, const Texture* renderedSc
 
 		if (ImGui::Begin("Viewport", 0, ImGuiWindowFlags_NoScrollbar))
 		{
-			//auto bounds = fw::Window::Get()->GetBoundsf();
-			//ImGui::SetWindowSize({ bounds.x, bounds.y });
+			auto bounds = fw::Window::Get()->GetBoundsf();
+			ImGui::SetWindowSize({ bounds.x, bounds.y });
 			ImVec2 min = ImGui::GetWindowContentRegionMin();
 			ImVec2 max = ImGui::GetWindowContentRegionMax();
 			ImVec2 offset = min;
